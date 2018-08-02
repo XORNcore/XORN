@@ -1,0 +1,26 @@
+# /etc/conf.d/xornd: config file for /etc/init.d/xornd
+
+# Config file location
+#BITCOIND_CONFIGFILE="/etc/xorn/xorn.conf"
+
+# What directory to write pidfile to?  (created and owned by $BITCOIND_USER)
+#BITCOIND_PIDDIR="/var/run/xornd"
+
+# What filename to give the pidfile
+#BITCOIND_PIDFILE="${BITCOIND_PIDDIR}/xornd.pid"
+
+# Where to write xornd data (be mindful that the blockchain is large)
+#BITCOIND_DATADIR="/var/lib/xornd"
+
+# User and group to own xornd process
+#BITCOIND_USER="xorn"
+#BITCOIND_GROUP="xorn"
+
+# Path to xornd executable
+#BITCOIND_BIN="/usr/bin/xornd"
+
+# Nice value to run xornd under
+#BITCOIND_NICE=0
+
+# Additional options (avoid -conf and -datadir, use flags above)
+BITCOIND_OPTS=""

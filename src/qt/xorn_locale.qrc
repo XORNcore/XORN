@@ -1,0 +1,30 @@
+<!DOCTYPE RCC><RCC version="1.0">
+    <qresource prefix="/translations">
+        <file alias="bg">locale/xorn_bg.qm</file>
+        <file alias="ca">locale/xorn_ca.qm</file>
+        <file alias="cs">locale/xorn_cs.qm</file>
+        <file alias="da">locale/xorn_da.qm</file>
+        <file alias="de">locale/xorn_de.qm</file>
+        <file alias="en">locale/xorn_en.qm</file>
+        <file alias="en_US">locale/xorn_en_US.qm</file>
+        <file alias="es">locale/xorn_es.qm</file>
+        <file alias="fi">locale/xorn_fi.qm</file>
+        <file alias="fr_FR">locale/xorn_fr_FR.qm</file>
+        <file alias="hr">locale/xorn_hr.qm</file>
+        <file alias="it">locale/xorn_it.qm</file>
+        <file alias="ja">locale/xorn_ja.qm</file>
+        <file alias="ko_KR">locale/xorn_ko_KR.qm</file>
+        <file alias="nl">locale/xorn_nl.qm</file>
+        <file alias="pl">locale/xorn_pl.qm</file>
+        <file alias="pt">locale/xorn_pt.qm</file>
+        <file alias="pt_BR">locale/xorn_pt_BR.qm</file>
+        <file alias="ro_RO">locale/xorn_ro_RO.qm</file>
+        <file alias="ru">locale/xorn_ru.qm</file>
+        <file alias="sk">locale/xorn_sk.qm</file>
+        <file alias="sv">locale/xorn_sv.qm</file>
+        <file alias="tr">locale/xorn_tr.qm</file>
+        <file alias="uk">locale/xorn_uk.qm</file>
+        <file alias="zh_CN">locale/xorn_zh_CN.qm</file>
+        <file alias="zh_TW">locale/xorn_zh_TW.qm</file>
+    </qresource>
+</RCC>

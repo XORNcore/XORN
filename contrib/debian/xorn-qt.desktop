@@ -1,0 +1,12 @@
+[Desktop Entry]
+Encoding=UTF-8
+Name=XORN
+Comment=XORN P2P Cryptocurrency
+Comment[fr]=XORN, monnaie virtuelle cryptographique pair à pair
+Comment[tr]=XORN, eşten eşe kriptografik sanal para birimi
+Exec=xorn-qt %u
+Terminal=false
+Type=Application
+Icon=xorn128
+MimeType=x-scheme-handler/xorn;
+Categories=Office;Finance;
