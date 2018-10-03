@@ -1,4 +1,4 @@
-XORN                                                                                                           The purpose of our project is to make trading and keeping masternodes and POS-Wallets as convenient as possible 
+XORN The purpose of our project is to make trading and keeping masternodes and POS-Wallets as convenient as possible 
 Estimated plan of the project:
 
 - creating of a comfortable trading platform for DEX with subsequent linking up of CoinExchange, Graviex, Cryptopia and newly merging exchanges popular in the Masternode community 
@@ -27,3 +27,8 @@ Staking pool:
 
 
 White paper and Roadmap will be available on our website shortly.
+
+Versions
+========
+1.0.0 - the first release
+1.1.0 - added dev-fee 5% since block 130,000

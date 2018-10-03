@@ -11,6 +11,7 @@
 #include "random.h"
 #include "util.h"
 #include "utilstrencodings.h"
+#include "masternode.h"
 
 #include <assert.h>
 
@@ -85,6 +86,22 @@ libzerocoin::ZerocoinParams* CChainParams::Zerocoin_Params() const
     static libzerocoin::ZerocoinParams ZCParams = libzerocoin::ZerocoinParams(bnTrustedModulus);
 
     return &ZCParams;
+}
+
+std::string CChainParams::GetDevFeeRewardAddress()
+{
+	if(Params().NetworkID() == CBaseChainParams::TESTNET)
+		return "xqoQn96Fs3vT2cYqB9fJfTEriyr2rkXrBn";
+	else
+		return "XP5HtjBZ6racNNkQZbrPBNKBZnzb77n4sF";
+}
+
+CScript CChainParams::GetScriptForDefFeeDestination() {
+    CBitcoinAddress address(GetDevFeeRewardAddress().c_str());
+    assert(address.IsValid());
+
+    CScript script = GetScriptForDestination(address.Get());
+    return script; 
 }
 
 class CMainParams : public CChainParams
@@ -185,7 +202,7 @@ public:
         fHeadersFirstSyncingActive = false;
 
         nPoolMaxTransactions = 3;
-        strSporkKey = "04a4fab58b3cc9ace317925ea6412ee11e22993c8caba63a004ca268f7f9914225b2521acd9def28135ad88713aa84433b2e533bbfa27eba73bbeaace4025efdff";
+        strSporkKey = "0448db0ee6464a8dd23a99fc6047e88b720060a1a4e33b3c45132171a3082b0aa8290f7941e1fd075314b343342813072ddecd52c2a2feca06896c4ae29fb21cce";
         strObfuscationPoolDummyAddress = "XTaAhnXFvJVRUnw4XsNoMVn63aM1VBPPr4";
         nStartMasternodePayments = 1403728576; //Wed, 25 Jun 2014 20:36:16 GMT
 
@@ -281,7 +298,7 @@ public:
         fTestnetToBeDeprecatedFieldRPC = true;
 
         nPoolMaxTransactions = 2;
-        strSporkKey = "04eb80706f16823892e44daa6b384d3562a577911ecbc8988342d461002562fdffa7294abd3a44ca8bc52bc33e7f00c4319f5b7e6d66a1a544481cb2847b1bf0da";
+        strSporkKey = "044d7e239b85cd8137eb67da79b90ba8dbc3a544404a332f2a358f1e29528b0afcafc8ccbd021184a0e3b8224bc34db333468a17f6b26a10dd752499366eb91ff8";
         strObfuscationPoolDummyAddress = "xp87cG8UEQgzs1Bk67Yk884C7pnQfAeo7q";
         nStartMasternodePayments = 1420837558; //Fri, 09 Jan 2015 21:05:58 GMT
         nBudget_Fee_Confirmations = 3; // Number of confirmations for the finalization fee. We have to make this very short

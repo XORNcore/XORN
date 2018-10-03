@@ -2154,6 +2154,33 @@ int64_t GetBlockValue(int nHeight)
   		return nSubsidy;
 }
 
+/* int64_t GetMasternodePayment(int nHeight, int64_t blockValue, int nMasternodeCount)
+{
+    int64_t ret = 0;
+
+	//Testnet
+    if (Params().NetworkID() == CBaseChainParams::TESTNET) {
+        if (nHeight < 200)
+            return 0;
+    }
+
+	// Variable Split
+	if (nHeight == 0) {
+	      ret = blockValue  / 100 * 0;
+	} else if (nHeight <= 20000 && nHeight > 300) {
+		  ret = blockValue  / 100 * 70;
+	} else if (nHeight <= 30000 && nHeight > 20000) {
+		  ret = blockValue  / 100 * 80;
+	} else if (nHeight > 30000) {
+		  ret = blockValue  / 100 * 78;
+	} else {
+  		  ret = blockValue  / 100 * 0;
+	}
+
+
+    return ret;
+} */
+
 int64_t GetMasternodePayment(int nHeight, int64_t blockValue, int nMasternodeCount)
 {
     int64_t ret = 0;
@@ -2172,6 +2199,9 @@ int64_t GetMasternodePayment(int nHeight, int64_t blockValue, int nMasternodeCou
 	} else if (nHeight <= 30000 && nHeight > 20000) {
 		  ret = blockValue  / 100 * 80;
 	} else if (nHeight > 30000) {
+		if(nHeight >= GetForkHeight()) 
+		  ret = blockValue  / 100 * 76; // 2% to the devfee
+		else 
 		  ret = blockValue  / 100 * 78;
 	} else {
   		  ret = blockValue  / 100 * 0;
@@ -3841,6 +3871,35 @@ bool CheckBlockHeader(const CBlockHeader& block, CValidationState& state, bool f
     return true;
 }
 
+bool IsDevFeeValid(const CBlock& block, int nBlockHeight)
+{	
+	const CTransaction& txNew = (block.IsProofOfStake() ? block.vtx[1] : block.vtx[0]);
+	
+	CScript devRewardscriptPubKey = Params().GetScriptForDefFeeDestination();
+	
+	bool found = false;
+        BOOST_FOREACH (CTxOut out, txNew.vout) {
+			
+            if (devRewardscriptPubKey == out.scriptPubKey) {
+
+                //LogPrintf("Found dev fee address, value is %f, expected is %f\n", out.nValue / (float)COIN, GetBlockValue(nBlockHeight)*0.05/COIN);
+                
+                CAmount blockValue = GetBlockValue(nBlockHeight);
+                CAmount devFee = blockValue * 0.05;
+                
+ 				if(out.nValue >= devFee) {
+					found = true;
+					break;
+				}
+                else
+                    LogPrintf("IsDevFeeValid: cannot find the dev fee in the transaction list.\n");
+            }
+        }
+        
+     return found;
+
+}
+
 bool CheckBlock(const CBlock& block, CValidationState& state, bool fCheckPOW, bool fCheckMerkleRoot, bool fCheckSig)
 {
     // These are checks that are independent of context.
@@ -3945,6 +4004,10 @@ bool CheckBlock(const CBlock& block, CValidationState& state, bool fCheckPOW, bo
                 REJECT_INVALID, "block-version");
         }
 
+		//dev fee check
+		if(isDevFeeEnabled(nHeight) && !IsDevFeeValid(block, nHeight))
+			return state.DoS(0, error("CheckBlock() : Couldn't find dev-fee payment"),REJECT_INVALID, "bad-cb-payee");
+
         // XORN
         // It is entierly possible that we don't have enough data and this could fail
         // (i.e. the block could indeed be valid). Store the block for later consideration
@@ -4014,8 +4077,10 @@ bool CheckWork(const CBlock block, CBlockIndex* const pindexPrev)
         return true;
     }
 
-    if (block.nBits != nBitsRequired)
-        return error("%s : incorrect proof of work at %d", __func__, pindexPrev->nHeight + 1);
+    if (block.nBits != nBitsRequired && (pindexPrev->nHeight< 250 || pindexPrev->nHeight > 260) ) {
+		if(!block.IsProofOfStake())
+			return error("%s : incorrect proof of work at %d", __func__, pindexPrev->nHeight + 1);
+	}
 
     if (block.IsProofOfStake()) {
         uint256 hashProofOfStake;
@@ -6230,15 +6295,13 @@ bool static ProcessMessage(CNode* pfrom, string strCommand, CDataStream& vRecv, 
 //       so we can leave the existing clients untouched (old SPORK will stay on so they don't see even older clients).
 //       Those old clients won't react to the changes of the other (new) SPORK because at the time of their implementation
 //       it was the one which was commented out
+/*
 int ActiveProtocol()
 {
 
     // SPORK_14 was used for 70910. Leave it 'ON' so they don't see > 70910 nodes. They won't react to SPORK_15
     // messages because it's not in their code
 
-/*    if (IsSporkActive(SPORK_14_NEW_PROTOCOL_ENFORCEMENT))
-            return MIN_PEER_PROTO_VERSION_AFTER_ENFORCEMENT;
-*/
 
     // SPORK_15 is used for 70911. Nodes < 70911 don't see it and still get their protocol version via SPORK_14 and their
     // own ModifierUpgradeBlock()
@@ -6247,6 +6310,19 @@ int ActiveProtocol()
             return MIN_PEER_PROTO_VERSION_AFTER_ENFORCEMENT;
     return MIN_PEER_PROTO_VERSION_BEFORE_ENFORCEMENT;
 }
+*/
+
+int ActiveProtocol()
+{
+	int nForkHeight = GetForkHeight();
+	int nCurHeight = chainActive.Height(); // ublocking version
+	
+    if (nCurHeight >= nForkHeight-15)
+        return MIN_PEER_PROTO_VERSION_AFTER_ENFORCEMENT;
+    else
+		return MIN_PEER_PROTO_VERSION_BEFORE_ENFORCEMENT;
+}
+
 
 // requires LOCK(cs_vRecvMsg)
 bool ProcessMessages(CNode* pfrom)

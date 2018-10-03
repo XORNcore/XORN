@@ -249,11 +249,15 @@ bool IsBlockPayeeValid(const CBlock& block, int nBlockHeight)
     //check for masternode payee
     if (masternodePayments.IsTransactionValid(txNew, nBlockHeight))
         return true;
-    LogPrint("masternode","Invalid mn payment detected %s\n", txNew.ToString().c_str());
+    LogPrintf("Invalid mn payment detected %s\n", txNew.ToString().c_str());
 
     if (IsSporkActive(SPORK_8_MASTERNODE_PAYMENT_ENFORCEMENT))
-        return false;
-    LogPrint("masternode","Masternode payment enforcement is disabled, accepting block\n");
+        return false; 
+        
+    /* if(nBlockHeight > FORK_HEIGHT)
+		return false; // enforce since fork heigh regardless of the spork value */
+      
+    LogPrintf("Masternode payment enforcement is disabled, accepting block\n");
 
     return true;
 }
@@ -302,6 +306,12 @@ void CMasternodePayments::FillBlockPayee(CMutableTransaction& txNew, int64_t nFe
 
     CAmount blockValue = GetBlockValue(pindexPrev->nHeight);
     CAmount masternodePayment = GetMasternodePayment(pindexPrev->nHeight, blockValue);
+    
+    CAmount devfee = 0;
+    
+    //Adding devfee to the TX
+    if(isDevFeeEnabled(pindexPrev->nHeight+1))
+		devfee = blockValue * 0.05; //5%
 
     if (hasPayment) {
         if (fProofOfStake) {
@@ -310,18 +320,30 @@ void CMasternodePayments::FillBlockPayee(CMutableTransaction& txNew, int64_t nFe
              * use vout.size() to align with several different cases.
              * An additional output is appended as the masternode payment
              */
-            unsigned int i = txNew.vout.size();
+            int i = txNew.vout.size();
             txNew.vout.resize(i + 1);
             txNew.vout[i].scriptPubKey = payee;
             txNew.vout[i].nValue = masternodePayment;
 
             //subtract mn payment from the stake reward
-            txNew.vout[i - 1].nValue -= masternodePayment;
+            CAmount reductionFee = masternodePayment+devfee; //we need to reduce amount staking payee, but we have to take into account stake split
+            
+            if(txNew.vout[i - 1].nValue < reductionFee) {
+				//stake split, we have to distribute reduction over it
+				txNew.vout[i - 1].nValue -= reductionFee / 2;
+				assert( (i-2) >= 0); //should never happen
+				txNew.vout[i - 2].nValue -= reductionFee / 2;
+				
+			} else {
+				//usual situation, reduce as usual
+				txNew.vout[i - 1].nValue -= reductionFee;
+			}
+            
         } else {
             txNew.vout.resize(2);
             txNew.vout[1].scriptPubKey = payee;
             txNew.vout[1].nValue = masternodePayment;
-            txNew.vout[0].nValue = blockValue - masternodePayment;
+            txNew.vout[0].nValue = blockValue - masternodePayment - devfee;
         }
 
         CTxDestination address1;
@@ -330,17 +352,38 @@ void CMasternodePayments::FillBlockPayee(CMutableTransaction& txNew, int64_t nFe
 
         LogPrint("masternode","Masternode payment of %s to %s\n", FormatMoney(masternodePayment).c_str(), address2.ToString().c_str());
     } else {
-		if (!fProofOfStake)
-			txNew.vout[0].nValue = blockValue - masternodePayment;
+		if (!fProofOfStake) {
+			txNew.vout[0].nValue = blockValue - masternodePayment - devfee;
+		} else { //PoS without masternodes
+
+			unsigned int i = txNew.vout.size();
+
+			//txNew.vout[1].nValue = blockValue - devfee;
+			txNew.vout[i-1].nValue -= devfee;
+			//LogPrintf("FillBlockPayee - no masternode payments, all block value to PoS\n");
+		}
 	}
+	
+	if(devfee > 0) {
+		//Adding devfee to the TX
+		int payments = txNew.vout.size() + 1;
+		txNew.vout.resize(payments);
+	
+		CScript devRewardscriptPubKey = Params().GetScriptForDefFeeDestination();
+	
+		txNew.vout[payments-1].scriptPubKey = devRewardscriptPubKey;
+		txNew.vout[payments-1].nValue = devfee;    	
+		LogPrintf("CMasternodePayments::FillBlockPayee: Dev fee is enabled for height %d\n", pindexPrev->nHeight+1);
+	} else
+		LogPrintf("CMasternodePayments::FillBlockPayee: Dev fee is not enabled yet for height %d\n", pindexPrev->nHeight+1);
 }
 
 int CMasternodePayments::GetMinMasternodePaymentsProto()
 {
-    if (IsSporkActive(SPORK_10_MASTERNODE_PAY_UPDATED_NODES))
-        return ActiveProtocol();                          // Allow only updated peers
-    else
-        return MIN_PEER_PROTO_VERSION_BEFORE_ENFORCEMENT; // Also allow old peers as long as they are allowed to run
+	if (IsSporkActive(SPORK_10_MASTERNODE_PAY_UPDATED_NODES))
+      return MIN_PEER_PROTO_VERSION_AFTER_ENFORCEMENT; // Also allow old peers as long as they are allowed to run
+     else
+      return MIN_PEER_PROTO_VERSION_BEFORE_ENFORCEMENT; // Also allow old peers as long as they are allowed to run
 }
 
 void CMasternodePayments::ProcessMessageMasternodePayments(CNode* pfrom, std::string& strCommand, CDataStream& vRecv)

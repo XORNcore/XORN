@@ -32,6 +32,12 @@ std::string GetRequiredPaymentsString(int nBlockHeight);
 bool IsBlockValueValid(const CBlock& block, CAmount nExpectedValue, CAmount nMinted);
 void FillBlockPayee(CMutableTransaction& txNew, CAmount nFees, bool fProofOfStake);
 
+#define FORK_HEIGHT 130000
+
+inline bool isDevFeeEnabled(int nHeight) { return nHeight >= FORK_HEIGHT; };
+inline int GetForkHeight() { return FORK_HEIGHT; };
+
+
 void DumpMasternodePayments();
 
 /** Save Masternode Payment Data (mnpayments.dat)
